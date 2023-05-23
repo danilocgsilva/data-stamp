@@ -1,0 +1,24 @@
+{
+    "name": "danilocgsilva/data-stamp",
+    "autoload": {
+        "psr-4": {
+            "Danilocgsilva\\DataStamp\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Danilo Silva",
+            "email": "contact@danilocgsilva.me"
+        }
+    ],
+    "require": {
+        "danilocgsilva/database_discover": "*"
+    },
+    "repositories": [
+        {
+            "name": "danilocgsilva/database_discover",
+            "type": "vcs",
+            "url": "https://github.com/danilocgsilva/database_discover"
+        }
+    ]
+}
