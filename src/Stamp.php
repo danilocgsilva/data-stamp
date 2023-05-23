@@ -46,7 +46,7 @@ class Stamp
             implode(", ", $fieldsToUpdate),
             implode(", ", $valuesToUpdateFromSource)
         );
-        
+
         $results = $this->targetPdo->prepare($updateQuery);
         $results->execute();
     }
@@ -79,10 +79,6 @@ class Stamp
                 $tableFiled->getName(), 
                 $tableFiled->getType()
             );
-        }
-
-        if ($this->ignoreKey) {
-            array_shift($contentQuery);
         }
 
         return $contentQuery;
