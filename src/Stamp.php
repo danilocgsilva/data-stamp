@@ -7,6 +7,7 @@ use Danilocgsilva\DatabaseDiscover\DatabaseDiscover;
 use Danilocgsilva\EntitiesDiscover\{Entity, ErrorLog};
 use Danilocgsilva\DataStamp\Utils\GetTableFields;
 use Danilocgsilva\DatabaseDiscover\Field;
+use Danilocgsilva\EntitiesDiscover\ForeignRelation;
 
 class Stamp
 {
@@ -37,7 +38,9 @@ class Stamp
     public function stamp(string $table, int $id, $ignoreKey = false): void
     {
         $foreigns = $this->checkForeings($table);
-        $this->checkTargetForeignProhibit($foreigns, $table);
+        if ($this->checkTargetForeignProhibit($foreigns, $table)) {
+            throw new DataIntegrityException("There are required fields as foreign keys. Tries to brigns the related model or fetch an existing model to relate in the existing database target.");
+        }
         
         $fieldsToUpdate = $this->getTableFieldsFromSource($table, $ignoreKey);
         $valuesToUpdateFromSource = $this->getValuesInQuery($id, $fieldsToUpdate, $table);
@@ -121,13 +124,24 @@ class Stamp
     {
         $getTableFieldsFromTarget = new GetTableFields($this->targetPdo);
         $targetFields = $getTableFieldsFromTarget->getTableFields($table);
-        $notLullableFields = array_filter(
-            $targetFields, 
-            fn (Field $field) => $field->getNullData() === "NO"
+        
+        $notNullableFieldsNames = array_map(
+            fn (Field $field) => $field->getName(),
+            array_filter(
+                $targetFields, 
+                fn (Field $field) => $field->getNullData() === "NO"
+            )
         );
 
-        if (in_array($notLullableFields, )) {
+        $foreignsNames = array_map(
+            fn (ForeignRelation $relation) => $relation->getLocalField(),
+            $foreigns
+        );
 
+        if (array_intersect($foreignsNames, $notNullableFieldsNames)) {
+            return true;
         }
+
+        return false;
     }
 }
