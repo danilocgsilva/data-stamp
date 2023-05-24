@@ -5,6 +5,11 @@
             "Danilocgsilva\\DataStamp\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Danilocgsilva\\DataStamp\\Tests\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "Danilo Silva",
@@ -12,13 +17,21 @@
         }
     ],
     "require": {
-        "danilocgsilva/database_discover": "*"
+        "danilocgsilva/database_discover": "*",
+        "danilocgsilva/entities_discover": "^0.1"
     },
     "repositories": [
         {
             "name": "danilocgsilva/database_discover",
             "type": "vcs",
             "url": "https://github.com/danilocgsilva/database_discover"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/danilocgsilva/entities_discover"
         }
-    ]
+    ],
+    "require-dev": {
+        "phpunit/phpunit": "^10.1"
+    }
 }

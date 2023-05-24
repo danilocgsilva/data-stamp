@@ -4,8 +4,10 @@ namespace Danilocgsilva\DataStamp\Utils;
 
 use PDO;
 use Danilocgsilva\DatabaseDiscover\DatabaseDiscover;
+use Danilocgsilva\EntitiesDiscover\ErrorLog;
+use Danilocgsilva\EntitiesDiscover\Entity;
 
-class GetTableFields
+class CheckTableFields
 {
     private DatabaseDiscover $databaseDiscover;
     
@@ -31,5 +33,17 @@ class GetTableFields
             array_shift($tableFields);
         }
         return $tableFields;
+    }
+
+    public function checkForeigns(string $tableName): array
+    {
+        $entity = new Entity(new ErrorLog());
+        $entity->setPdo($this->pdo);
+        $entity->setTable($tableName);
+        $foreigns = [];
+        foreach ($entity->getForeigns() as $foreign) {
+            $foreigns[] = $foreign;
+        }
+        return $foreigns;
     }
 }
