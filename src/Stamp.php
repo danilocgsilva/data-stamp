@@ -4,13 +4,15 @@ namespace Danilocgsilva\DataStamp;
 
 use PDO;
 use Danilocgsilva\DatabaseDiscover\DatabaseDiscover;
+use Danilocgsilva\EntitiesDiscover\{Entity, ErrorLog};
+use Danilocgsilva\DataStamp\Utils\GetTableFields;
+use Danilocgsilva\DatabaseDiscover\Field;
+use Danilocgsilva\EntitiesDiscover\ForeignRelation;
 
 class Stamp
 {
     private PDO $sourcePdo;
     private PDO $targetPdo;
-    private DatabaseDiscover $databaseDiscover;
-    private bool $ignoreKey;
 
     public function __construct(DatabaseDiscover $databaseDiscover = null)
     {
@@ -35,8 +37,12 @@ class Stamp
 
     public function stamp(string $table, int $id, $ignoreKey = false): void
     {
-        $this->ignoreKey = $ignoreKey;
-        $fieldsToUpdate = $this->getTableFields($table);
+        $foreigns = $this->checkForeings($table);
+        if ($this->checkTargetForeignProhibit($foreigns, $table)) {
+            throw new DataIntegrityException("There are required fields as foreign keys. Tries to brigns the related model or fetch an existing model to relate in the existing database target.");
+        }
+        
+        $fieldsToUpdate = $this->getTableFieldsFromSource($table, $ignoreKey);
         $valuesToUpdateFromSource = $this->getValuesInQuery($id, $fieldsToUpdate, $table);
 
         $queryBase = "INSERT INTO %s (%s) VALUES (%s)";
@@ -51,17 +57,10 @@ class Stamp
         $results->execute();
     }
 
-    private function getTableFields(string $tableName): array
+    private function getTableFieldsFromSource(string $table, bool $ignoreKey): array
     {
-        $this->databaseDiscover->setPdo($this->sourcePdo);
-        $tableFields = [];
-        foreach ($this->databaseDiscover->getFieldsFromTable($tableName) as $tableField) {
-            $tableFields[] = $tableField;
-        }
-        if ($this->ignoreKey) {
-            array_shift($tableFields);
-        }
-        return $tableFields;
+        $getTableFieldsFromSource = new GetTableFields($this->sourcePdo);
+        return $getTableFieldsFromSource->getTableFields($table, $ignoreKey);
     }
 
     private function getValuesInQuery(int $entityId, array $tableFields, string $tableName): array
@@ -104,5 +103,45 @@ class Stamp
             $contentBaseField = "\"" . $contentBaseField . "\"";
         }
         return $contentBaseField;
+    }
+
+    private function checkForeings(string $tableName): array
+    {
+        $entity = new Entity(new ErrorLog());
+        $entity->setPdo($this->sourcePdo);
+        $entity->setTable($tableName);
+        $foreigns = [];
+        foreach ($entity->getForeigns() as $foreign) {
+            $foreigns[] = $foreign;
+        }
+        return $foreigns;
+    }
+
+    /**
+     * Must verify if there are non nullable fields in the foreign keys
+     */
+    private function checkTargetForeignProhibit(array $foreigns, string $table)
+    {
+        $getTableFieldsFromTarget = new GetTableFields($this->targetPdo);
+        $targetFields = $getTableFieldsFromTarget->getTableFields($table);
+        
+        $notNullableFieldsNames = array_map(
+            fn (Field $field) => $field->getName(),
+            array_filter(
+                $targetFields, 
+                fn (Field $field) => $field->getNullData() === "NO"
+            )
+        );
+
+        $foreignsNames = array_map(
+            fn (ForeignRelation $relation) => $relation->getLocalField(),
+            $foreigns
+        );
+
+        if (array_intersect($foreignsNames, $notNullableFieldsNames)) {
+            return true;
+        }
+
+        return false;
     }
 }
